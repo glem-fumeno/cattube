@@ -1,0 +1,13 @@
+:root {
+    background: #212121;
+    color: #eeeeee;
+}
+
+.wrapper button {
+    display: block;
+}
+
+.wrapper input {
+    display: block;
+}
+
