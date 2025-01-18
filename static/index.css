@@ -54,6 +54,11 @@ input:focus, button:hover {
     height: 60px;
 }
 
+#progress-tracker p {
+    position: relative;
+    z-index: 1;
+}
+
 #progress-tracker-tracker {
     content: "";
     position: absolute;

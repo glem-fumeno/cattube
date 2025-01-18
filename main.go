@@ -62,10 +62,13 @@ func download_part(client Client, video_type string, part int) error {
 	return nil
 }
 
+func set_done() {
+	done = true
+}
+
 func download(w http.ResponseWriter, r *http.Request) {
 	done = false
-	// current_total_size = 1
-	// current_size = 0
+	defer set_done()
 	jsonParser := json.NewDecoder(r.Body)
 	data := UrlRequest{}
 	err := jsonParser.Decode(&data)
@@ -104,19 +107,21 @@ func download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	export_path :=os.Getenv("CATTUBE_PATH")
+	if export_path == "" {
+		export_path = "/tmp"
+	}
 	cmd = exec.Command(
 		"mv",
 		"/tmp/video.mp4",
-		fmt.Sprintf("/tmp/%s [%s].mp4", video.Title, video.ID),
+		fmt.Sprintf("%s/%s [%s].mp4", export_path, video.Title, video.ID),
 	)
 	_, err = cmd.CombinedOutput()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, `{"message": "%s"}`, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	done = true
-	fmt.Fprintf(w, `{"title": "%s"}`, video.Title)
+	fmt.Fprintf(w, `Done!`)
 }
 
 func stream(w http.ResponseWriter, r *http.Request) {

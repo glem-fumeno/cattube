@@ -22,10 +22,16 @@ const progress_tracker_tracker = document.querySelector("#progress-tracker-track
 submit_button.addEventListener(
     "click",
     async () => {
+        document.querySelector("#server-response").innerText = "Downloading...";
         fetch("/api/download", {
             method: "POST",
             body: JSON.stringify({ url: url_input.value }),
-        })
+        }).then(
+            async (response) => {
+                const data = await response.text();
+                document.querySelector("#server-response").innerText = data;
+            }
+        )
         for await (let chunk of streamingFetch(() => fetch("/api/stream"))) {
             parts = chunk.toString().split("/");
             done = parseInt(parts[0]);
@@ -37,3 +43,15 @@ submit_button.addEventListener(
         }
     }
 )
+
+window.onload = async () => {
+    for await (let chunk of streamingFetch(() => fetch("/api/stream"))) {
+        parts = chunk.toString().split("/");
+        done = parseInt(parts[0]);
+        full = parseInt(parts[1]);
+        precent = done / full * 100;
+        document.querySelector("p").innerText = `${precent.toFixed(2)}%`;
+
+        progress_tracker_tracker.style.width = parseInt(precent) + "%";
+    }
+}
