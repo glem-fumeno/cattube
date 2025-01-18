@@ -47,7 +47,7 @@ func download_part(client Client, video_type string, part int) error {
 		return err
 	}
 	defer video_stream.Close()
-	video_part, err := os.Create(fmt.Sprintf("video.mp4.part%d", part))
+	video_part, err := os.Create(fmt.Sprintf("/tmp/video.mp4.part%d", part))
 	if err != nil {
 		return err
 	}
@@ -91,11 +91,11 @@ func download(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command(
 		"ffmpeg",
 		"-y",
-		"-i", "video.mp4.part1",
-		"-i", "video.mp4.part2",
+		"-i", "/tmp/video.mp4.part1",
+		"-i", "/tmp/video.mp4.part2",
 		"-c", "copy",
 		"-shortest",
-		"video.mp4",
+		"/tmp/video.mp4",
 	)
 	_, err = cmd.CombinedOutput()
 	if err != nil {
@@ -104,8 +104,8 @@ func download(w http.ResponseWriter, r *http.Request) {
 	}
 	cmd = exec.Command(
 		"mv",
-		"video.mp4",
-		fmt.Sprintf("%s [%s].mp4", video.Title, video.ID),
+		"/tmp/video.mp4",
+		fmt.Sprintf("/tmp/%s [%s].mp4", video.Title, video.ID),
 	)
 	_, err = cmd.CombinedOutput()
 	if err != nil {
