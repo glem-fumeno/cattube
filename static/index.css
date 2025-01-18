@@ -1,13 +1,65 @@
+@import "./colors.css";
+
+*,*::after,*::before { box-sizing: border-box; }
+
 :root {
-    background: #212121;
-    color: #eeeeee;
+    background: var(--monochrome-0);
+    color: var(--text);
 }
 
-.wrapper button {
-    display: block;
+main {
+    width: min(100% - 4rem, 1000px);
+    margin-inline: auto;
+    font-family: sans-serif;
+    font-size: 3rem;
 }
 
-.wrapper input {
-    display: block;
+h1 {
+    color: var(--green);
+    text-align: center;
 }
 
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+input,button {
+    font: inherit;
+    color: inherit;
+    border-radius: 2rem;
+    border: 2px solid var(--green);
+    background: var(--monochrome-1);
+}
+
+input {
+    padding: 2rem 4rem;
+}
+
+button {
+    cursor: pointer;
+    padding: 2rem;
+}
+
+input:focus, button:hover {
+    background-color: var(--monochrome-2);
+}
+
+#progress-tracker {
+    width: 100%;
+    background: var(--monochrome-1);
+    position: relative;
+    height: 60px;
+}
+
+#progress-tracker-tracker {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    background-color: var(--green);
+}

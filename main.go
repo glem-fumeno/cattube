@@ -15,6 +15,7 @@ import (
 var (
 	current_total_size int64
 	current_size       int64
+	done               bool
 )
 
 func root(w http.ResponseWriter, r *http.Request) {
@@ -62,8 +63,9 @@ func download_part(client Client, video_type string, part int) error {
 }
 
 func download(w http.ResponseWriter, r *http.Request) {
-	current_total_size = 1
-	current_size = 0
+	done = false
+	// current_total_size = 1
+	// current_size = 0
 	jsonParser := json.NewDecoder(r.Body)
 	data := UrlRequest{}
 	err := jsonParser.Decode(&data)
@@ -113,6 +115,7 @@ func download(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `{"message": "%s"}`, err)
 		return
 	}
+	done = true
 	fmt.Fprintf(w, `{"title": "%s"}`, video.Title)
 }
 
@@ -124,7 +127,7 @@ func stream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for current_size < current_total_size {
+	for !done {
 		fmt.Fprintf(w, "%d/%d\n", current_size, current_total_size)
 		flusher.Flush()
 		time.Sleep(100 * time.Millisecond)
