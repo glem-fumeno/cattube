@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    volumes:
+      - .:/app
+      - ./destination/:/destination/
+      - /app/tmp
+    command: air
+
