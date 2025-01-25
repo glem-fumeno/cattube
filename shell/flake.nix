@@ -10,11 +10,11 @@
         in
             {
             devShells.${system}.default = pkgs.mkShell {
-                packages = [
-                    pkgs.go
-                    pkgs.gopls
-                    pkgs.air
-                    pkgs.ffmpeg
+                packages = with pkgs; [
+                    go
+                    gopls
+                    air
+                    ffmpeg
                 ];
                 shellHook = ''
                 source ~/.bashrc

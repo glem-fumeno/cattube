@@ -2,31 +2,38 @@ package main
 
 import "testing"
 
-func TestQueueEnqueue(t *testing.T) {
+func TestQueue(t *testing.T) {
 	q := MakeQueue()
 
 	have := [3]Node{
-		{"a", "a", "a", 1},
-		{"b", "b", "b", 2},
-		{"c", "c", "c", 3},
+		{"a", "a", "a"},
+		{"b", "b", "b"},
+		{"c", "c", "c"},
 	}
 	want := [3]Node{
-		{"a", "a", "a", 1},
-		{"b", "b", "b", 2},
-		{"c", "c", "c", 3},
+		{"a", "a", "a"},
+		{"b", "b", "b"},
+		{"c", "c", "c"},
 	}
 	got := [3]Node{}
 
 	for i := range 3 {
-		q.Enqueue(have[i])
+		q.Enqueue(&have[i])
 	}
 
 	for i := range 3 {
-		val, err := q.Dequeue()
+		want_val, err := q.Peek()
 		if err != nil {
-			t.Errorf("should not get here")
+			t.Errorf("got error %v, want nil", err)
 		}
-		got[i] = *val
+		got_val, err := q.Dequeue()
+		if err != nil {
+			t.Errorf("got error %v, want nil", err)
+		}
+		if *got_val != *want_val {
+			t.Errorf("got %v, want %v", got_val, want_val)
+		}
+		got[i] = *got_val
 	}
 
 	if got != want {

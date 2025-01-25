@@ -12,5 +12,5 @@ COPY . .
 
 EXPOSE 8090
 
-CMD ["go", "run", "main.go"]
+CMD ["go", "run", "."]
 

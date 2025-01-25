@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"time"
 
 	youtube "github.com/kkdai/youtube/v2"
 )
@@ -25,7 +26,6 @@ func (s Stream) Read(p []byte) (n int, err error) {
 	current_size += int64(n)
 	return n, e
 }
-
 
 type Client struct {
 	video  *youtube.Video
@@ -96,7 +96,9 @@ func merge_parts(title string, video_id string) error {
 }
 
 func set_done() {
-	done = true
+	if videoQueue.IsEmpty() {
+		done = true
+	}
 }
 
 func download(w http.ResponseWriter, r *http.Request) {
@@ -120,6 +122,15 @@ func download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	nodeData := &Node{data.Url, video.Title, video.Duration.String()}
+	videoQueue.Enqueue(nodeData)
+	defer videoQueue.Dequeue()
+	val, _ := videoQueue.Peek();
+	for val.Url != nodeData.Url {
+		log.Printf("Waiting for %v\n", val.Url)
+		time.Sleep(1000 * time.Millisecond)
+		val, _ = videoQueue.Peek();
+	}
 	err = download_part(Client{video, client}, "video/mp4", 1)
 	if err != nil {
 		log.Println(err)
@@ -141,4 +152,3 @@ func download(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Done downloading video %s\n", video.Title)
 	fmt.Fprintf(w, `Done!`)
 }
-

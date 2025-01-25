@@ -9,5 +9,5 @@ services:
       - .:/app
       - ./destination/:/destination/
       - /app/tmp
-    command: ["go", "run", "main.go"]
+    command: ["go", "run", "."]
 

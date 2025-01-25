@@ -9,6 +9,7 @@ var (
 	current_total_size int64
 	current_size       int64
 	done               bool
+	videoQueue         Queue
 )
 
 func root(w http.ResponseWriter, r *http.Request) {
@@ -17,6 +18,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	videoQueue = MakeQueue()
 	log.Println("Starting server")
 	http.HandleFunc("/", root)
 	http.HandleFunc("POST /api/download", download)
