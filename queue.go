@@ -41,3 +41,11 @@ func (q Queue) Peek() (*Node, error) {
 func (q Queue) IsEmpty() bool {
 	return len(q.nodes) == 0
 }
+
+func (q Queue) GetAll() []Node {
+	ret := make([]Node, len(q.nodes))
+	for i, n := range q.nodes {
+		ret[i] = *n
+	}
+	return ret
+}

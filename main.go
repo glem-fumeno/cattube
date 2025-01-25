@@ -19,6 +19,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	videoQueue = MakeQueue()
+	done = true
 	log.Println("Starting server")
 	http.HandleFunc("/", root)
 	http.HandleFunc("POST /api/download", download)

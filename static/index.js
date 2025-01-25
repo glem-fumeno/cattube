@@ -1,3 +1,17 @@
+/** @typedef StreamedData
+ *  @type {object}
+ *  @property {number} currentSize
+ *  @property {number} currentTotalSize
+ *  @property {SDNode[]} videos
+ */
+
+/** @typedef SDNode
+ * @type {object}
+ * @property {string} url
+ * @property {string} title
+ * @property {string} duration
+ * */
+
 async function* streamingFetch(fetchcall) {
     const response = await fetchcall();
     const reader = response.body.getReader();
@@ -18,6 +32,7 @@ let progress_tracker = document.getElementById('progress-tracker');
 /** @type HTMLElement */
 const progress_tracker_tracker = document.querySelector("#progress-tracker-tracker");
 
+const video_queue = document.querySelector("#video-queue")
 
 submit_button.addEventListener(
     "click",
@@ -32,26 +47,35 @@ submit_button.addEventListener(
                 document.querySelector("#server-response").innerText = data;
             }
         )
-        for await (let chunk of streamingFetch(() => fetch("/api/stream"))) {
-            parts = chunk.toString().split("/");
-            done = parseInt(parts[0]);
-            full = parseInt(parts[1]);
-            precent = done / full * 100;
-            document.querySelector("p").innerText = `${precent.toFixed(2)}%`;
-
-            progress_tracker_tracker.style.width = parseInt(precent) + "%";
-        }
+        setTimeout(getStreamAndParseResponse, 500);
     }
 )
 
-window.onload = async () => {
-    for await (let chunk of streamingFetch(() => fetch("/api/stream"))) {
-        parts = chunk.toString().split("/");
-        done = parseInt(parts[0]);
-        full = parseInt(parts[1]);
-        precent = done / full * 100;
-        document.querySelector("p").innerText = `${precent.toFixed(2)}%`;
+window.onload = getStreamAndParseResponse;
 
-        progress_tracker_tracker.style.width = parseInt(precent) + "%";
+async function getStreamAndParseResponse() {
+    for await (let chunk of streamingFetch(() => fetch("/api/stream"))) {
+        /** @type {StreamedData} */
+        const sd = JSON.parse(chunk);
+
+        const done = sd.currentSize;
+        const full = sd.currentTotalSize;
+        let percent = done / full * 100;
+        if (isNaN(percent) || !isFinite(percent)) {
+            percent = 0;
+        }
+        document.querySelector("p").innerText = `${percent.toFixed(2)}%`;
+        progress_tracker_tracker.style.width = parseInt(percent) + "%";
+
+        video_queue.innerHTML = "";
+
+        const videos = sd.videos;
+
+        for (const video of videos) {
+            const li = document.createElement("li");
+            li.innerHTML = `${video.title}`;
+            video_queue.appendChild(li);
+        }
+        
     }
 }
