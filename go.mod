@@ -2,6 +2,8 @@ module cattube
 
 go 1.23.2
 
+replace github.com/kkdai/youtube/v2 => github.com/jdesgats/golang-youtube/v2 v2.0.0-20250121204728-daf3b49ae5d8
+
 require github.com/kkdai/youtube/v2 v2.10.2
 
 require (
