@@ -8,6 +8,7 @@ import (
 var (
 	current_total_size int64
 	current_size       int64
+	current_log        string
 	done               bool
 	videoQueue         Queue
 )

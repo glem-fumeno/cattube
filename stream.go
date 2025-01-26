@@ -9,6 +9,7 @@ import (
 )
 
 type StreamedData struct {
+	CurrentLog       string `json:"currentLog"`
 	CurrentSize      int64  `json:"currentSize"`
 	CurrentTotalSize int64  `json:"currentTotalSize"`
 	Videos           []Node `json:"videos"`
@@ -24,12 +25,14 @@ func stream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sd, _ := json.Marshal(StreamedData{
+		current_log,
 		current_size,
 		current_total_size,
 		videoQueue.GetAll(),
 	})
 	for !done {
 		sd, err := json.Marshal(StreamedData{
+			current_log,
 			current_size,
 			current_total_size,
 			videoQueue.GetAll(),

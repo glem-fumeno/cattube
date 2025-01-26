@@ -4,13 +4,15 @@ WORKDIR /app
 
 RUN mkdir -p /destination
 
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /out
 
-RUN go install github.com/air-verse/air@latest
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
+RUN go build -o /out/cattube .
+
 EXPOSE 8090
 
-CMD ["go", "run", "."]
+CMD ["/out/cattube"]
 

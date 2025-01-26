@@ -32,33 +32,38 @@ type Client struct {
 	client youtube.Client
 }
 
+func Log(message string, args ...interface{}) {
+	current_log = fmt.Sprintf(message, args...)
+	log.Println(current_log)
+}
+
 func download_part(client Client, video_type string, part int) error {
-	log.Printf("Downloading part %d\n", part)
+	Log("Downloading part %d", part)
 	video_formats := client.video.Formats.Type(video_type)
 	video_stream, video_size, err := client.client.GetStream(client.video, &video_formats[0])
 	if err != nil {
 		return err
 	}
 	defer video_stream.Close()
-	log.Printf("Got stream part %d\n", part)
+	Log("Got stream part %d", part)
 	video_part, err := os.Create(fmt.Sprintf("/tmp/video.mp4.part%d", part))
 	if err != nil {
 		return err
 	}
 	defer video_part.Close()
-	log.Printf("Created file part %d\n", part)
+	Log("Created file part %d", part)
 	current_total_size = video_size
 	current_size = 0
 	_, err = io.Copy(video_part, Stream{video_stream})
-	log.Printf("Copied file part %d\n", part)
+	Log("Copied file part %d", part)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func merge_parts(title string, video_id string) error {
-	log.Printf("Merging video and audio %s\n", title)
+func merge_parts(title string, video_id string) (string, error) {
+	Log("Merging video and audio %s", title)
 	cmd := exec.Command(
 		"ffmpeg",
 		"-y",
@@ -68,31 +73,31 @@ func merge_parts(title string, video_id string) error {
 		"-shortest",
 		"/tmp/video.mp4",
 	)
-	_, err := cmd.CombinedOutput()
+	result, err := cmd.CombinedOutput()
 	if err != nil {
-		return err
+		return string(result), err
 	}
-	log.Printf("Moving video %s\n", title)
+	Log("Moving video %s", title)
 	cmd = exec.Command(
 		"mv",
 		"/tmp/video.mp4",
 		fmt.Sprintf("/destination/%s [%s].mp4", title, video_id),
 	)
-	_, err = cmd.CombinedOutput()
+	result, err = cmd.CombinedOutput()
 	if err != nil {
-		return err
+		return string(result), err
 	}
-	log.Printf("Cleaning up %s\n", title)
+	Log("Cleaning up %s", title)
 	cmd = exec.Command(
 		"rm",
 		"/tmp/video.mp4.part1",
 		"/tmp/video.mp4.part2",
 	)
-	_, err = cmd.CombinedOutput()
+	result, err = cmd.CombinedOutput()
 	if err != nil {
-		return err
+		return string(result), err
 	}
-	return nil
+	return "", nil
 }
 
 func set_done() {
@@ -104,51 +109,51 @@ func set_done() {
 func download(w http.ResponseWriter, r *http.Request) {
 	done = false
 	defer set_done()
-	log.Printf("Decoding body")
+	Log("Decoding body")
 	jsonParser := json.NewDecoder(r.Body)
 	data := UrlRequest{}
 	err := jsonParser.Decode(&data)
 	if err != nil {
-		log.Println(err)
+		Log(err.Error())
 		http.Error(w, "Unprocessable Entity", http.StatusUnprocessableEntity)
 		return
 	}
 	client := youtube.Client{}
-	log.Printf("Getting video %s\n", data.Url)
+	Log("Getting video %s", data.Url)
 
 	video, err := client.GetVideo(data.Url)
 	if err != nil {
-		log.Println(err)
+		Log(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	nodeData := &Node{data.Url, video.Title, video.Duration.String()}
 	videoQueue.Enqueue(nodeData)
 	defer videoQueue.Dequeue()
-	val, _ := videoQueue.Peek();
+	val, _ := videoQueue.Peek()
 	for val.Url != nodeData.Url {
-		log.Printf("Waiting for %v\n", val.Url)
+		Log("Waiting for %v", val.Url)
 		time.Sleep(1000 * time.Millisecond)
-		val, _ = videoQueue.Peek();
+		val, _ = videoQueue.Peek()
 	}
 	err = download_part(Client{video, client}, "video/mp4", 1)
 	if err != nil {
-		log.Println(err)
+		Log(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = download_part(Client{video, client}, "audio/mp4", 2)
 	if err != nil {
-		log.Println(err)
+		Log(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = merge_parts(video.Title, video.ID)
+	result, err := merge_parts(video.Title, video.ID)
 	if err != nil {
-		log.Println(err)
+		Log("Error merging parts: %s, %s", result, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Done downloading video %s\n", video.Title)
+	Log("Done downloading video %s", video.Title)
 	fmt.Fprintf(w, `Done!`)
 }

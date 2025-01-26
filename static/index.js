@@ -1,5 +1,6 @@
 /** @typedef StreamedData
  *  @type {object}
+ *  @property {string} currentLog
  *  @property {number} currentSize
  *  @property {number} currentTotalSize
  *  @property {SDNode[]} videos
@@ -41,12 +42,7 @@ submit_button.addEventListener(
         fetch("/api/download", {
             method: "POST",
             body: JSON.stringify({ url: url_input.value }),
-        }).then(
-            async (response) => {
-                const data = await response.text();
-                document.querySelector("#server-response").innerText = data;
-            }
-        )
+        })
         setTimeout(getStreamAndParseResponse, 500);
     }
 )
@@ -57,13 +53,17 @@ async function getStreamAndParseResponse() {
     for await (let chunk of streamingFetch(() => fetch("/api/stream"))) {
         /** @type {StreamedData} */
         const sd = JSON.parse(chunk);
-
+        let log = sd.currentLog;
         const done = sd.currentSize;
         const full = sd.currentTotalSize;
         let percent = done / full * 100;
         if (isNaN(percent) || !isFinite(percent)) {
             percent = 0;
         }
+        if (log.length > 100) {
+            log = log.substring(0, 100) + "...";
+        }
+        document.querySelector("#server-response").innerText = log;
         document.querySelector("p").innerText = `${percent.toFixed(2)}%`;
         progress_tracker_tracker.style.width = parseInt(percent) + "%";
 
@@ -76,6 +76,5 @@ async function getStreamAndParseResponse() {
             li.innerHTML = `${video.title}`;
             video_queue.appendChild(li);
         }
-        
     }
 }
