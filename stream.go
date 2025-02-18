@@ -24,12 +24,6 @@ func stream(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
-	sd, _ := json.Marshal(StreamedData{
-		current_log,
-		current_size,
-		current_total_size,
-		videoQueue.GetAll(),
-	})
 	for !done {
 		sd, err := json.Marshal(StreamedData{
 			current_log,
@@ -43,12 +37,16 @@ func stream(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		// fmt.Fprintf(w, "%d/%d\n", current_size, current_total_size)
 		fmt.Fprintf(w, "%s", sd)
 		flusher.Flush()
 		time.Sleep(100 * time.Millisecond)
 	}
-	log.Println("Streaming done!")
+	sd, _ := json.Marshal(StreamedData{
+		current_log,
+		current_size,
+		current_total_size,
+		videoQueue.GetAll(),
+	})
 	fmt.Fprintf(w, "%s", sd)
 	flusher.Flush()
 }

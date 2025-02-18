@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
+	"strings"
 	"time"
 
 	youtube "github.com/kkdai/youtube/v2"
@@ -40,7 +42,16 @@ func Log(message string, args ...interface{}) {
 func download_part(client Client, video_type string, part int) error {
 	Log("Downloading part %d", part)
 	video_formats := client.video.Formats.Type(video_type)
-	video_stream, video_size, err := client.client.GetStream(client.video, &video_formats[0])
+	video_index := 0
+	for i, format := range video_formats {
+		language := format.LanguageDisplayName()
+		if strings.Contains(language, "original") {
+			Log("Found original format %#v", language)
+			video_index = i
+			break
+		}
+	}
+	video_stream, video_size, err := client.client.GetStream(client.video, &video_formats[video_index])
 	if err != nil {
 		return err
 	}
@@ -78,6 +89,8 @@ func merge_parts(title string, video_id string) (string, error) {
 		return string(result), err
 	}
 	Log("Moving video %s", title)
+	var re = regexp.MustCompile(`(/|')`)
+	title = re.ReplaceAllString(title, " ")
 	cmd = exec.Command(
 		"mv",
 		"/tmp/video.mp4",
@@ -106,6 +119,34 @@ func set_done() {
 	}
 }
 
+func download_video(data UrlRequest) (*youtube.Video, error) {
+	client := youtube.Client{}
+	Log("Getting video %s", data.Url)
+
+	video, err := client.GetVideo(data.Url)
+	if err != nil {
+		return nil, err
+	}
+	nodeData := &Node{data.Url, video.Title, video.Duration.String()}
+	videoQueue.Enqueue(nodeData)
+	defer videoQueue.Dequeue()
+	val, _ := videoQueue.Peek()
+	for val.Url != nodeData.Url {
+		log.Printf("Waiting for %v\n", val.Url)
+		time.Sleep(1000 * time.Millisecond)
+		val, _ = videoQueue.Peek()
+	}
+	err = download_part(Client{video, client}, "video/mp4", 1)
+	if err != nil {
+		return nil, err
+	}
+	err = download_part(Client{video, client}, "audio/mp4", 2)
+	if err != nil {
+		return nil, err
+	}
+	return video, nil
+}
+
 func download(w http.ResponseWriter, r *http.Request) {
 	done = false
 	defer set_done()
@@ -118,31 +159,13 @@ func download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unprocessable Entity", http.StatusUnprocessableEntity)
 		return
 	}
-	client := youtube.Client{}
-	Log("Getting video %s", data.Url)
-
-	video, err := client.GetVideo(data.Url)
-	if err != nil {
-		Log(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	var video *youtube.Video
+	for range 10 {
+		video, err = download_video(data)
+		if err == nil {
+			break
+		}
 	}
-	nodeData := &Node{data.Url, video.Title, video.Duration.String()}
-	videoQueue.Enqueue(nodeData)
-	defer videoQueue.Dequeue()
-	val, _ := videoQueue.Peek()
-	for val.Url != nodeData.Url {
-		Log("Waiting for %v", val.Url)
-		time.Sleep(1000 * time.Millisecond)
-		val, _ = videoQueue.Peek()
-	}
-	err = download_part(Client{video, client}, "video/mp4", 1)
-	if err != nil {
-		Log(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	err = download_part(Client{video, client}, "audio/mp4", 2)
 	if err != nil {
 		Log(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
