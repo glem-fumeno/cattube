@@ -15,6 +15,8 @@ import (
 	youtube "github.com/kkdai/youtube/v2"
 )
 
+
+
 type UrlRequest struct {
 	Url string `json:"url"`
 }
@@ -34,7 +36,7 @@ type Client struct {
 	client youtube.Client
 }
 
-func Log(message string, args ...interface{}) {
+func Log(message string, args ...any) {
 	current_log = fmt.Sprintf(message, args...)
 	log.Println(current_log)
 }
@@ -73,7 +75,7 @@ func download_part(client Client, video_type string, part int) error {
 	return nil
 }
 
-func merge_parts(title string, video_id string) (string, error) {
+func merge_parts(path, title, video_id string) (string, error) {
 	Log("Merging video and audio %s", title)
 	cmd := exec.Command(
 		"ffmpeg",
@@ -94,7 +96,7 @@ func merge_parts(title string, video_id string) (string, error) {
 	cmd = exec.Command(
 		"mv",
 		"/tmp/video.mp4",
-		fmt.Sprintf("/destination/%s [%s].mp4", title, video_id),
+		fmt.Sprintf("%s/%s [%s].mp4", path, title, video_id),
 	)
 	result, err = cmd.CombinedOutput()
 	if err != nil {
@@ -171,7 +173,8 @@ func download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	result, err := merge_parts(video.Title, video.ID)
+	
+	result, err := merge_parts(os.Getenv("CATTUBE_OUTPUT_PATH"), video.Title, video.ID)
 	if err != nil {
 		Log("Error merging parts: %s, %s", result, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
